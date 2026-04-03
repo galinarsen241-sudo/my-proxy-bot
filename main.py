@@ -1,3 +1,4 @@
+# ВЕРСИЯ 2.0 (TG ПОДДЕРЖКА)
 import telebot
 import re
 import json

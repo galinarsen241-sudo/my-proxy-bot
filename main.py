@@ -9,7 +9,7 @@ TOKEN = '8592635991:AAFEvUQNHegCgONCX2Ko__TePQIUMi-ih0E'
 CHANNEL_ID = '-1003762831847'
 CHANNEL_NAME = '@xFlyZ1x'
 
-# Список админов с никами для статистики
+# Список админов
 ADMINS = {
     5453653945: "@l5ixi5l",
     5140787805: "@Winter_grab"
@@ -17,15 +17,18 @@ ADMINS = {
 
 bot = telebot.TeleBot(TOKEN)
 STATS_FILE = "stats.json"
+# Твой новый текст для обычных пользователей
+ACCESS_DENIED_TEXT = "Извините, вы не админ канала @xFlyZ1x, поэтому вы не можете использовать этого бота.😮"
 
-# Загрузка статистики из файла
 def load_stats():
     if os.path.exists(STATS_FILE):
-        with open(STATS_FILE, "r") as f:
-            return json.load(f)
+        try:
+            with open(STATS_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {str(uid): 0 for uid in ADMINS}
     return {str(uid): 0 for uid in ADMINS}
 
-# Сохранение статистики
 def save_stats(stats):
     with open(STATS_FILE, "w") as f:
         json.dump(stats, f)
@@ -46,7 +49,6 @@ def format_and_post(url, message):
         
         bot.send_message(CHANNEL_ID, text, parse_mode='HTML', reply_markup=markup)
         
-        # Обновляем счетчик
         stats = load_stats()
         uid = str(message.from_user.id)
         stats[uid] = stats.get(uid, 0) + 1
@@ -60,7 +62,7 @@ def format_and_post(url, message):
 def handle_commands(message):
     uid = message.from_user.id
     if uid not in ADMINS:
-        bot.reply_to(message, "э иди атсбда нафек какашка @xFlyZ1x")
+        bot.reply_to(message, ACCESS_DENIED_TEXT)
         return
 
     if message.text == "/stats":
@@ -76,7 +78,7 @@ def handle_commands(message):
 @bot.message_handler(func=lambda m: True)
 def handle_all(message):
     if message.from_user.id not in ADMINS:
-        bot.reply_to(message, "э иди атсбда нафек какашка @xFlyZ1x")
+        bot.reply_to(message, ACCESS_DENIED_TEXT)
         return
 
     links = re.findall(r'https://t\.me/proxy\?[\w=&%.-]+', message.text or "")
@@ -90,4 +92,5 @@ def handle_all(message):
     else:
         bot.reply_to(message, "Пришли прокси или жми /stats")
 
+print("Бот обновлен...")
 bot.polling(none_stop=True)

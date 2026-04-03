@@ -1,42 +1,47 @@
 import telebot
 from urllib.parse import urlparse, parse_qs
 
-# Настройки
-bot = telebot.TeleBot('8592635991:AAFEvUQNHegCgONCX2Ko__TePQIUMi-ih0E')
-CHANNEL_ID = '-1003762831847' # Например @pelmeshki_flyz
+TOKEN = '8592635991:AAFEvUQNHegCgONCX2Ko__TePQIUMi-ih0E'
+CHANNEL_ID = '-1003762831847'
 CHANNEL_NAME = '@xFlyZ1x'
+
+# Список разрешенных ID (Ты и твой друг)
+ADMINS = [5453653945, 5140787805]
+
+bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Пришли мне ссылку на прокси (t.me/proxy...), и я опубликую её красиво!")
+ if message.from_user.id in ADMINS:
+  bot.reply_to(message, "Привет, админ! Я готов к работе. Кидай ссылку.")
+ else:
+  bot.reply_to(message, "э иди атсбда нафек какашка этим ботом управляют только админы @xFlyZ1x")
 
-@bot.message_handler(func=lambda m: "t.me/proxy?" in m.text)
-def handle_proxy(message):
-    try:
-        # Парсим ссылку
-        url = message.text.strip()
-        parsed = urlparse(url)
-        params = parse_qs(parsed.query)
-        
-        server = params.get('server', [''])[0]
-        port = params.get('port', [''])[0]
-        secret = params.get('secret', [''])[0]
+@bot.message_handler(func=lambda m: True) # Слушаем все сообщения
+def handle_all(message):
+ # Проверяем, админ ли это
+ if message.from_user.id not in ADMINS:
+  bot.reply_to(message, "э иди атсбда нафек какашка этим ботом управляют только админы @xFlyZ1x")
+  return
 
-        # Оформляем текст как на твоем фото
-        text = (
-            f"<b>{CHANNEL_NAME}</b>\n"
-            f"#прокси\n\n"
-            f"<b>Сервер:</b> <code>{server}</code>\n"
-            f"<b>Порт:</b> <code>{port}</code>\n"
-            f"<b>Ключ:</b> <code>{secret}</code>\n\n"
-            f"<blockquote>{url}</blockquote>"
-        )
+ # Если это админ и он прислал ссылку на прокси
+ if message.text and "t.me/proxy?" in message.text:
+  try:
+   url = message.text.strip()
+   p = urlparse(url)
+   q = parse_qs(p.query)
+   s = q.get('server',[''])[0]
+   port = q.get('port',[''])[0]
+   sec = q.get('secret',[''])[0]
+   
+   text = f"<b>{CHANNEL_NAME}</b>\n#прокси\n\n<b>Сервер:</b> <code>{s}</code>\n<b>Порт:</b> <code>{port}</code>\n<b>Ключ:</b> <code>{sec}</code>\n\n<blockquote>{url}</blockquote>"
+   
+   bot.send_message(CHANNEL_ID, text, parse_mode='HTML')
+   bot.reply_to(message, "✅ Опубликовано, босс!")
+  except Exception as e:
+   bot.reply_to(message, f"❌ Ошибка: {e}")
+ else:
+  bot.reply_to(message, "Я жду ссылку на прокси, бро!")
 
-        # Публикуем в канал
-        bot.send_message(CHANNEL_ID, text, parse_mode='HTML')
-        bot.reply_to(message, "✅ Опубликовано в канал!")
-        
-    except Exception as e:
-        bot.reply_to(message, f"❌ Ошибка: {e}")
-
-bot.polling()
+print("Бот с защитой запущен...")
+bot.polling(none_stop=True)

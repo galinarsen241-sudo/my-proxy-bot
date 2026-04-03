@@ -1,14 +1,34 @@
 import telebot
 import re
+import json
+import os
 from urllib.parse import urlparse, parse_qs
-from telebot import types # Добавили библиотеку кнопок
+from telebot import types
 
 TOKEN = '8592635991:AAFEvUQNHegCgONCX2Ko__TePQIUMi-ih0E'
 CHANNEL_ID = '-1003762831847'
 CHANNEL_NAME = '@xFlyZ1x'
-ADMINS = [5453653945, 5140787805]
+
+# Список админов с никами для статистики
+ADMINS = {
+    5453653945: "@l5ixi5l",
+    5140787805: "@Winter_grab"
+}
 
 bot = telebot.TeleBot(TOKEN)
+STATS_FILE = "stats.json"
+
+# Загрузка статистики из файла
+def load_stats():
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE, "r") as f:
+            return json.load(f)
+    return {str(uid): 0 for uid in ADMINS}
+
+# Сохранение статистики
+def save_stats(stats):
+    with open(STATS_FILE, "w") as f:
+        json.dump(stats, f)
 
 def format_and_post(url, message):
     try:
@@ -18,23 +38,40 @@ def format_and_post(url, message):
         port = q.get('port',[''])[0]
         sec = q.get('secret',[''])[0]
         
-        text = (
-            f"<b>{CHANNEL_NAME}</b>\n"
-            f"#прокси\n\n"
-            f"<b>Сервер:</b> <code>{s}</code>\n"
-            f"<b>Порт:</b> <code>{port}</code>\n"
-            f"<b>Ключ:</b> <code>{sec}</code>\n"
-        )
+        text = f"<b>{CHANNEL_NAME}</b>\n#прокси\n\n<b>Сервер:</b> <code>{s}</code>\n<b>Порт:</b> <code>{port}</code>\n<b>Ключ:</b> <code>{sec}</code>\n"
         
-        # Создаем красивую кнопку
         markup = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton(text="⚡ ПОДКЛЮЧИТЬ", url=url)
         markup.add(btn)
         
         bot.send_message(CHANNEL_ID, text, parse_mode='HTML', reply_markup=markup)
-        bot.reply_to(message, "✅ Опубликовал с кнопкой!")
+        
+        # Обновляем счетчик
+        stats = load_stats()
+        uid = str(message.from_user.id)
+        stats[uid] = stats.get(uid, 0) + 1
+        save_stats(stats)
+        
+        bot.reply_to(message, f"✅ Опубликовано! Твой счет: {stats[uid]}")
     except:
         bot.reply_to(message, "❌ Ошибка в ссылке.")
+
+@bot.message_handler(commands=['start', 'stats'])
+def handle_commands(message):
+    uid = message.from_user.id
+    if uid not in ADMINS:
+        bot.reply_to(message, "э иди атсбда нафек какашка @xFlyZ1x")
+        return
+
+    if message.text == "/stats":
+        stats = load_stats()
+        res = "<b>📊 Статистика админов:</b>\n\n"
+        for aid, nick in ADMINS.items():
+            count = stats.get(str(aid), 0)
+            res += f"👤 {nick}: {count} шт.\n"
+        bot.send_message(message.chat.id, res, parse_mode='HTML')
+    else:
+        bot.reply_to(message, "Здарова! Кидай прокси или пиши /stats")
 
 @bot.message_handler(func=lambda m: True)
 def handle_all(message):
@@ -51,6 +88,6 @@ def handle_all(message):
                 format_and_post(entity.url, message)
                 return
     else:
-        bot.reply_to(message, "Пришли прокси, бро!")
+        bot.reply_to(message, "Пришли прокси или жми /stats")
 
 bot.polling(none_stop=True)

@@ -19,7 +19,18 @@ CHANNEL_ID = '-1003762831847'
 CHANNEL_NAME = '@xFlyZ1x'
 ADMINS = {5453653945: "@l5ixi5l", 5140787805: "@Winter_grab"}
 bot = telebot.TeleBot(TOKEN)
-STATS_FILE = "stats.json"
+BUCKET_URL = "https://kvdb.io/T4b5vSUn9s4r63TBbByVBt/stats"
+
+def load_stats():
+    try:
+        r = requests.get(BUCKET_URL, timeout=5)
+        if r.status_code == 200: return r.json()
+    except: pass
+    return {str(uid): 0 for uid in ADMINS}
+
+def save_stats(stats):
+    try: requests.post(BUCKET_URL, json=stats, timeout=5)
+    except: pass
 
 def check_proxy(server, port):
     try:
@@ -29,18 +40,7 @@ def check_proxy(server, port):
         s.connect((server, int(port)))
         s.close()
         return True
-    except:
-        return False
-
-def load_stats():
-    if os.path.exists(STATS_FILE):
-        try:
-            with open(STATS_FILE, "r") as f: return json.load(f)
-        except: pass
-    return {str(uid): 0 for uid in ADMINS}
-
-def save_stats(stats):
-    with open(STATS_FILE, "w") as f: json.dump(stats, f)
+    except: return False
 
 def format_and_post(url, message):
     try:
@@ -50,16 +50,13 @@ def format_and_post(url, message):
         s = q.get('server',[''])[0]
         port = q.get('port',[''])[0]
         sec = q.get('secret',[''])[0]
-        
         bot.send_message(message.chat.id, f"⏳ Проверка {s}...")
-        
         if check_proxy(s, port):
             final_url = f"https://t.me/proxy?server={s}&port={port}&secret={sec}"
             text = f"<b>{CHANNEL_NAME}</b>\n#прокси\n\n<b>Сервер:</b> <code>{s}</code>\n<b>Порт:</b> <code>{port}</code>\n<b>Ключ:</b> <code>{sec}</code>\n"
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(text="⚡ ПОДКЛЮЧИТЬ", url=final_url))
             bot.send_message(CHANNEL_ID, text, parse_mode='HTML', reply_markup=markup)
-            
             stats = load_stats()
             uid = str(message.from_user.id)
             stats[uid] = stats.get(uid, 0) + 1
@@ -76,7 +73,7 @@ def handle_commands(message):
         bot.reply_to(message, "Извините, вы не админ канала @xFlyZ1x...😮"); return
     if message.text == "/stats":
         stats = load_stats()
-        res = "<b>📊 Статистика админов:</b>\n\n"
+        res = "<b>📊 Вечная статистика админов:</b>\n\n"
         for aid, nick in ADMINS.items():
             res += f"👤 {nick}: {stats.get(str(aid), 0)} шт.\n"
         bot.send_message(message.chat.id, res, parse_mode='HTML')

@@ -7,7 +7,7 @@ from telebot import types
 server = Flask('')
 @server.route('/')
 def home():
-    return "I am alive!"
+    return "OK"
 def run():
     server.run(host='0.0.0.0', port=8080)
 def keep_alive():

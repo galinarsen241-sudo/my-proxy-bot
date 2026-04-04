@@ -24,13 +24,24 @@ BUCKET_URL = "https://kvdb.io/T4b5vSUn9s4r63TBbByVBt/stats"
 def load_stats():
     try:
         r = requests.get(BUCKET_URL, timeout=5)
-        if r.status_code == 200: return r.json()
-    except: pass
+        if r.status_code == 200:
+            data = r.json()
+            # Проверяем, что в базе есть данные для обоих админов
+            for aid in ADMINS:
+                if str(aid) not in data:
+                    data[str(aid)] = 0
+            return data
+    except:
+        pass
+    # Если база пустая или ошибка - возвращаем нули
     return {str(uid): 0 for uid in ADMINS}
 
 def save_stats(stats):
-    try: requests.post(BUCKET_URL, json=stats, timeout=5)
-    except: pass
+    try:
+        # Отправляем данные в облако kvdb.io
+        requests.post(BUCKET_URL, json=stats, timeout=5)
+    except Exception as e:
+        print(f"Ошибка сохранения: {e}")
 
 def check_proxy(server, port):
     try:

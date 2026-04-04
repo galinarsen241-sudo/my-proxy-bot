@@ -1,6 +1,18 @@
 import telebot, re, json, os, requests
+from flask import Flask
+from threading import Thread
 from urllib.parse import urlparse, parse_qs
 from telebot import types
+
+server = Flask('')
+@server.route('/')
+def home():
+    return "I am alive!"
+def run():
+    server.run(host='0.0.0.0', port=8080)
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 
 TOKEN = '8592635991:AAFEvUQNHegCgONCX2Ko__TePQIUMi-ih0E'
 CHANNEL_ID = '-1003762831847'
@@ -62,7 +74,7 @@ def handle_commands(message):
             res += f"👤 {nick}: {stats.get(str(aid), 0)} шт.\n"
         bot.send_message(message.chat.id, res, parse_mode='HTML')
     else:
-        bot.reply_to(message, "Здарова! Кидай прокси или /stats")
+        bot.reply_to(message, "Здарова! Кидай прокси или пиши /stats")
 
 @bot.message_handler(func=lambda m: True)
 def handle_all(message):
@@ -80,4 +92,6 @@ def handle_all(message):
     else:
         bot.reply_to(message, "Пришли прокси или жми /stats")
 
-bot.polling(none_stop=True)
+if __name__ == "__main__":
+    keep_alive()
+    bot.polling(none_stop=True)

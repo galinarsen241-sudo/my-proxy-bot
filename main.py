@@ -23,10 +23,14 @@ STATS_FILE = "stats.json"
 
 def check_proxy(server, port):
     try:
-        requests.get(f"http://{server}:{port}", timeout=2)
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect((server, int(port)))
+        s.close()
         return True
     except:
-        return True
+        return False
 
 def load_stats():
     if os.path.exists(STATS_FILE):
@@ -46,20 +50,23 @@ def format_and_post(url, message):
         s = q.get('server',[''])[0]
         port = q.get('port',[''])[0]
         sec = q.get('secret',[''])[0]
-        bot.send_message(message.chat.id, f"⏳ Проверяю {s}...")
+        
+        bot.send_message(message.chat.id, f"⏳ Проверка {s}...")
+        
         if check_proxy(s, port):
             final_url = f"https://t.me/proxy?server={s}&port={port}&secret={sec}"
             text = f"<b>{CHANNEL_NAME}</b>\n#прокси\n\n<b>Сервер:</b> <code>{s}</code>\n<b>Порт:</b> <code>{port}</code>\n<b>Ключ:</b> <code>{sec}</code>\n"
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(text="⚡ ПОДКЛЮЧИТЬ", url=final_url))
             bot.send_message(CHANNEL_ID, text, parse_mode='HTML', reply_markup=markup)
+            
             stats = load_stats()
             uid = str(message.from_user.id)
             stats[uid] = stats.get(uid, 0) + 1
             save_stats(stats)
-            bot.reply_to(message, f"✅ Опубликовано! Счет: {stats[uid]}")
+            bot.reply_to(message, f"✅ Живой! Опубликовано. Счет: {stats[uid]}")
         else:
-            bot.reply_to(message, "❌ Прокси МЕРТВ.")
+            bot.reply_to(message, "❌ Прокси недоступен.")
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка: {e}")
 
